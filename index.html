@@ -339,6 +339,88 @@
     color: var(--ink-soft);
     padding: 0 16px 12px;
   }
+
+  .picker-toggle {
+    width: 100%;
+    text-align: left;
+    font-size: 15px;
+    padding: 11px 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--ink-soft);
+    font-family: inherit;
+  }
+  .picker-toggle.has-value {
+    color: var(--ink);
+  }
+
+  .picker-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 50;
+    display: flex;
+    align-items: flex-end;
+  }
+  .picker-panel {
+    background: #fff;
+    width: 100%;
+    max-height: 80vh;
+    border-radius: 18px 18px 0 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .picker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--line);
+    font-weight: 800;
+    font-size: 15px;
+  }
+  .picker-close {
+    border: none;
+    background: var(--bg);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+  .picker-options {
+    overflow-y: auto;
+    padding: 8px 0 calc(16px + env(safe-area-inset-bottom));
+  }
+  .picker-option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    padding: 14px 18px;
+    font-size: 14.5px;
+    line-height: 1.5;
+    color: var(--ink);
+    font-family: inherit;
+  }
+  .picker-option:active {
+    background: var(--bg);
+  }
+  .pc-cat {
+    font-weight: 800;
+  }
+  .pc-green {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .pc-red {
+    color: var(--danger);
+    font-weight: 700;
+  }
 </style>
 </head>
 <body>
@@ -351,11 +433,11 @@
 <main>
 
   <div class="section">
-    <div class="section-title">Lead Info</div>
+    <div class="section-title">Sales Rep</div>
     <div class="field row2">
       <div>
-        <label>Referred By</label>
-        <input type="text" id="call_received_by" placeholder="Full name">
+        <label>Sales Rep Name</label>
+        <input type="text" id="sales_rep_name" placeholder="Full name">
       </div>
       <div>
         <label class="optional">Time</label>
@@ -365,18 +447,28 @@
         </div>
       </div>
     </div>
+    <div class="field">
+      <label>Trade Partner Referral Name</label>
+      <input type="text" id="trade_referral_name">
+    </div>
+    <div class="field row2">
+      <div>
+        <label>Trade Partner Referral Company</label>
+        <input type="text" id="trade_referral_company">
+      </div>
+      <div>
+        <label>Trade Partner Referral Phone</label>
+        <input type="tel" id="trade_referral_phone">
+      </div>
+    </div>
   </div>
 
   <div class="section">
     <div class="section-title">Intake Instructions</div>
     <div class="field">
       <label>Select One</label>
-      <select id="intake_instructions">
-        <option value="">Select…</option>
-        <option>Emergency Services Requested</option>
-        <option>Intake - No need to call, Concierge will schedule</option>
-        <option>Intake - Please call, obtain the full FNOL and dispatch</option>
-      </select>
+      <button type="button" id="intakeInstructionsToggle" class="picker-toggle">Select…</button>
+      <input type="hidden" id="intake_instructions" value="">
     </div>
   </div>
 
@@ -415,6 +507,7 @@
         <option>Restaurant/Hospitality</option>
         <option>Healthcare/Medical</option>
         <option>School/Educational</option>
+        <option>Bank</option>
         <option>Other Commercial Structure</option>
       </select>
     </div>
@@ -466,6 +559,17 @@
     <div class="field">
       <label>POC Email</label>
       <input type="email" id="poc_email">
+    </div>
+    <div class="field" style="padding-top:4px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <label style="margin-bottom:0;">Onsite Contact Name</label>
+        <button type="button" id="sameAsPocBtn" style="padding:6px 12px; border-radius:8px; border:1.5px solid var(--orange); background:#fff; color:var(--orange-dark); font-weight:700; font-size:12.5px;">Same as POC</button>
+      </div>
+      <input type="text" id="onsite_contact_name">
+    </div>
+    <div class="field">
+      <label>Onsite Contact Phone</label>
+      <input type="tel" id="onsite_contact_phone">
     </div>
   </div>
 
@@ -636,6 +740,7 @@
   <div class="section">
     <div class="section-title">Scope / Notes</div>
     <div class="field">
+      <label>Scope/Notes</label>
       <textarea id="scope_notes" placeholder="What did the customer describe? Any complimentary inspection notes, scheduling info, etc." style="min-height:110px;"></textarea>
     </div>
   </div>
@@ -652,7 +757,120 @@
 
 <div id="printCard"></div>
 
+<div id="intakeOverlay" class="picker-overlay" style="display:none;">
+  <div class="picker-panel">
+    <div class="picker-header">
+      <span>Intake Instructions</span>
+      <button type="button" id="intakeOverlayClose" class="picker-close">✕</button>
+    </div>
+    <div class="picker-options">
+      <button type="button" class="picker-option" data-val="Estimate — Scheduled. Dispatch: enter into all platforms, no docs, not a confirmed job.">
+        <span class="pc-cat">Estimate:</span> <span class="pc-green">Scheduled</span>. Dispatch: enter into all platforms; no docs; job not confirmed.
+      </button>
+      <button type="button" class="picker-option" data-val="Emergency — Please call to obtain full FNOL. Dispatch: enter into all platforms, send docs, and confirm ETA.">
+        <span class="pc-cat">Emergency:</span> <span class="pc-red">Please call</span> to obtain full FNOL. Dispatch: enter into all platforms, send docs, and confirm ETA.
+      </button>
+      <button type="button" class="picker-option" data-val="Emergency — Do not call; full FNOL already obtained. Dispatch: Enter into all platforms, send docs, confirm ETA.">
+        <span class="pc-cat">Emergency:</span> Do not call; full FNOL already obtained. Dispatch: Enter into all platforms, send docs, confirm ETA.
+      </button>
+      <button type="button" class="picker-option" data-val="Emergency (MSA) — Please call to obtain full FNOL. Dispatch: Enter into all platforms and confirm ETA.">
+        <span class="pc-cat">Emergency (MSA):</span> <span class="pc-red">Please call</span> to obtain full FNOL. Dispatch: Enter into all platforms and confirm ETA.
+      </button>
+      <button type="button" class="picker-option" data-val="Emergency (MSA) — Do not call. Dispatch: Enter into all platforms and confirm ETA.">
+        <span class="pc-cat">Emergency (MSA):</span> Do not call. Dispatch: Enter into all platforms and confirm ETA.
+      </button>
+      <button type="button" class="picker-option" data-val="Non-Emergency — Please call to obtain full FNOL. Dispatch: enter into all platforms, send docs, and confirm ETA.">
+        <span class="pc-cat">Non-Emergency:</span> <span class="pc-red">Please call</span> to obtain full FNOL. Dispatch: enter into all platforms, send docs, and confirm ETA.
+      </button>
+      <button type="button" class="picker-option" data-val="Non-Emergency — Scheduled; full FNOL already obtained. Dispatch: enter into all platforms and send docs.">
+        <span class="pc-cat">Non-Emergency:</span> <span class="pc-green">Scheduled</span>; full FNOL already obtained. Dispatch: enter into all platforms and send docs.
+      </button>
+      <button type="button" class="picker-option" data-val="Non-Emergency (MSA) — Scheduled. Dispatch: enter into all platforms.">
+        <span class="pc-cat">Non-Emergency (MSA):</span> <span class="pc-green">Scheduled</span>. Dispatch: enter into all platforms.
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
+  // "Same as POC" toggle — while active, onsite contact stays live-synced to the
+  // main POC name/phone; toggling off unlocks the fields for independent editing.
+  (function() {
+    const btn = document.getElementById('sameAsPocBtn');
+    const nameField = document.getElementById('onsite_contact_name');
+    const phoneField = document.getElementById('onsite_contact_phone');
+    const pocNameField = document.getElementById('poc_name');
+    const pocPhoneField = document.getElementById('poc_phone');
+    if (!btn || !nameField || !phoneField) return;
+
+    let active = false;
+
+    function syncFromPoc() {
+      nameField.value = pocNameField.value;
+      phoneField.value = pocPhoneField.value;
+      if (typeof scheduleImageRefresh === 'function') scheduleImageRefresh();
+    }
+
+    function setActive(state) {
+      active = state;
+      if (active) {
+        btn.textContent = '✓ Same as POC';
+        btn.style.background = 'var(--orange)';
+        btn.style.color = '#fff';
+        nameField.readOnly = true;
+        phoneField.readOnly = true;
+        nameField.style.background = 'var(--bg)';
+        phoneField.style.background = 'var(--bg)';
+        syncFromPoc();
+      } else {
+        btn.textContent = 'Same as POC';
+        btn.style.background = '#fff';
+        btn.style.color = 'var(--orange-dark)';
+        nameField.readOnly = false;
+        phoneField.readOnly = false;
+        nameField.style.background = '#fff';
+        phoneField.style.background = '#fff';
+      }
+    }
+
+    btn.addEventListener('click', () => setActive(!active));
+
+    // Keep onsite fields synced live while the toggle is active
+    pocNameField.addEventListener('input', () => { if (active) syncFromPoc(); });
+    pocPhoneField.addEventListener('input', () => { if (active) syncFromPoc(); });
+  })();
+
+  // Custom Intake Instructions picker (native <select> can't render bold/colored text)
+  (function() {
+    const toggleBtn = document.getElementById('intakeInstructionsToggle');
+    const hiddenInput = document.getElementById('intake_instructions');
+    const overlay = document.getElementById('intakeOverlay');
+    const closeBtn = document.getElementById('intakeOverlayClose');
+
+    function openOverlay() {
+      overlay.style.display = 'flex';
+    }
+    function closeOverlay() {
+      overlay.style.display = 'none';
+    }
+
+    toggleBtn.addEventListener('click', openOverlay);
+    closeBtn.addEventListener('click', closeOverlay);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeOverlay();
+    });
+
+    document.querySelectorAll('.picker-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        hiddenInput.value = opt.dataset.val;
+        toggleBtn.innerHTML = opt.innerHTML;
+        toggleBtn.classList.add('has-value');
+        closeOverlay();
+        if (typeof scheduleImageRefresh === 'function') scheduleImageRefresh();
+      });
+    });
+  })();
+
   // Auto-timestamp the Time field on load (editable afterward), plus a manual refresh button
   function currentTimeString() {
     const now = new Date();
@@ -732,7 +950,10 @@
     if (val('structure_type')) lines.push(`Structure Type: ${val('structure_type')}`);
     if (val('intake_instructions')) lines.push(val('intake_instructions'));
     lines.push('');
-    lines.push(`Referred By: ${val('call_received_by')}${val('call_time') ? '  |  Time: ' + val('call_time') : ''}`);
+    lines.push(`Sales Rep: ${val('sales_rep_name')}${val('call_time') ? '  |  Time: ' + val('call_time') : ''}`);
+    if (val('trade_referral_name') || val('trade_referral_company') || val('trade_referral_phone')) {
+      lines.push(`Trade Partner Referral: ${val('trade_referral_name')}${val('trade_referral_company') ? ' | ' + val('trade_referral_company') : ''}${val('trade_referral_phone') ? ' | ' + val('trade_referral_phone') : ''}`);
+    }
 
     if (val('business_name')) lines.push(`Business Name: ${val('business_name')}`);
     const addressLine = [
@@ -744,6 +965,9 @@
     lines.push(`Job Address: ${addressLine}`);
 
     lines.push(`POC: ${val('poc_name')}${val('poc_title') ? ' (' + val('poc_title') + ')' : ''} | ${val('poc_phone')}${val('poc_email') ? ' | ' + val('poc_email') : ''}`);
+    if (val('onsite_contact_name') || val('onsite_contact_phone')) {
+      lines.push(`Onsite Contact: ${val('onsite_contact_name')}${val('onsite_contact_phone') ? ' | ' + val('onsite_contact_phone') : ''}`);
+    }
 
     if (val('billing_poc_name') || val('billing_poc_phone') || val('billing_poc_email')) {
       lines.push(`Billing POC: ${val('billing_poc_name')}${val('billing_poc_title') ? ' (' + val('billing_poc_title') + ')' : ''}${val('billing_poc_phone') ? ' | ' + val('billing_poc_phone') : ''}${val('billing_poc_email') ? ' | ' + val('billing_poc_email') : ''}`);
@@ -841,8 +1065,9 @@
           <div class="pc-section-title">Job Type &amp; Intake</div>
           ${row('Structure Type', val('structure_type'))}
           ${row('Intake Instructions', val('intake_instructions'))}
-          ${row('Referred By', val('call_received_by'))}
+          ${row('Sales Rep', val('sales_rep_name'))}
           ${row('Time', val('call_time'))}
+          ${row('Trade Partner Referral', [val('trade_referral_name'), val('trade_referral_company'), val('trade_referral_phone')].filter(Boolean).join(' | '))}
         </div>
 
         <div class="pc-section">
@@ -853,6 +1078,7 @@
           ${row('POC Title', val('poc_title'))}
           ${row('POC Phone', val('poc_phone'))}
           ${row('POC Email', val('poc_email'))}
+          ${row('Onsite Contact', [val('onsite_contact_name'), val('onsite_contact_phone')].filter(Boolean).join(' | '))}
           ${row('Billing POC', [val('billing_poc_name'), val('billing_poc_phone'), val('billing_poc_email')].filter(Boolean).join(' | '))}
           ${row('HOA Contact', [val('hoa_contact_name'), val('hoa_contact_phone'), val('hoa_contact_email')].filter(Boolean).join(' | '))}
         </div>
@@ -929,8 +1155,8 @@
 
   document.getElementById('shareBtn').addEventListener('click', function(clickEvent) {
     const insuranceOk = ynState.self_pay === 'Y' || !!val('insurance_name');
-    if (!val('job_type') || !val('structure_type') || !val('street_address') || !val('city') || !val('state') || !val('zip') || !val('poc_name') || !val('poc_title') || !val('poc_phone') || !val('poc_email') || !insuranceOk || typeOfLossSelected.size === 0) {
-      showToast('Fill in job type, structure type, full address, all POC fields, at least one Type of Loss, and insurance carrier (unless confirmed Self Pay) first');
+    if (!val('job_type') || !val('structure_type') || !val('intake_instructions') || !val('street_address') || !val('city') || !val('state') || !val('zip') || !val('poc_name') || !val('poc_title') || !val('poc_phone') || !val('poc_email') || !insuranceOk || typeOfLossSelected.size === 0 || !val('scope_notes')) {
+      showToast('Fill in job type, structure type, intake instructions, full address, all POC fields, at least one Type of Loss, insurance carrier (unless confirmed Self Pay), and scope/notes first');
       return;
     }
     const message = buildMessage();
