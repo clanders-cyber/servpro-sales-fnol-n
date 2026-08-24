@@ -491,25 +491,45 @@
   </div>
 
   <div class="section">
+    <div class="section-title">Facility Type</div>
+    <div class="field">
+      <label>Select Facility Type</label>
+      <select id="facility_type">
+        <option value="">Select…</option>
+        <option>Residential</option>
+        <option>Corporate Campus</option>
+        <option>Distribution/Warehouse</option>
+        <option>Education</option>
+        <option>Financial</option>
+        <option>Food Services/Manufacturing</option>
+        <option>Government</option>
+        <option>Healthcare</option>
+        <option>Hospitality/Entertainment</option>
+        <option>Managed Property</option>
+        <option>Manufacturing/Industry</option>
+        <option>Religious Institutions</option>
+        <option>Retail</option>
+        <option>Transportation</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="field" id="facilityOtherWrap" style="display:none;">
+      <label>Please specify Facility Type</label>
+      <input type="text" id="facility_type_other" placeholder="What is it?">
+    </div>
+  </div>
+
+  <div class="section">
     <div class="section-title">Structure Type</div>
     <div class="field">
       <label>Select Structure Type</label>
-      <select id="structure_type">
-        <option value="">Select…</option>
-        <option>Single Family</option>
-        <option>Multi-Unit Residential</option>
-        <option>Condo/Townhome</option>
-        <option>Apartment Complex</option>
-        <option>Multi-Unit Commercial</option>
-        <option>Office</option>
-        <option>Retail</option>
-        <option>Warehouse/Industrial</option>
-        <option>Restaurant/Hospitality</option>
-        <option>Healthcare/Medical</option>
-        <option>School/Educational</option>
-        <option>Bank</option>
-        <option>Other Commercial Structure</option>
+      <select id="structure_type" disabled>
+        <option value="">Select a Facility Type first…</option>
       </select>
+    </div>
+    <div class="field" id="structureOtherWrap" style="display:none;">
+      <label>Please specify Structure Type</label>
+      <input type="text" id="structure_type_other" placeholder="What is it?">
     </div>
   </div>
 
@@ -793,6 +813,87 @@
 </div>
 
 <script>
+  // Facility Type -> Structure Type cascading dropdown
+  const FACILITY_STRUCTURE_MAP = {
+    'Residential': ['Single Family', 'Multi-Unit Residential', 'Condo/Townhome', 'Apartment Complex'],
+    'Corporate Campus': ['In-House Facility Manager', 'Out-Sourced Facility Management'],
+    'Distribution/Warehouse': ['Food/Beverage Distribution', 'Retail Distribution', 'Shipping Distribution'],
+    'Education': ['College/University', 'Community/Vocational College', 'Elementary', 'High School', 'Middle', 'Pre-K', 'Private K-12', 'Private PreK'],
+    'Financial': ['Banks', 'Call Centers', 'Corporate Campus'],
+    'Food Services/Manufacturing': ['Cafeterias', 'Fast Food Chains', 'Food/Beverage Manufacturing', 'Full Service Dining'],
+    'Government': ['City/County/Municipality', 'Federal', 'Military Bases', 'Military Housing', 'Parks and Recreation', 'State', 'TSA', 'VA Hospitals'],
+    'Healthcare': ['Assisted Living Center', 'Dental Clinics', 'Dental Offices', 'Hospitals', 'Nursing Homes', 'Pharmacy', 'Professional Medical Offices', 'Sr. Living/Retirement', 'Surgical Centers', 'Walk-in Clinics'],
+    'Hospitality/Entertainment': ['Family Fun Centers', 'Golf Courses', 'Hotels/Motels', 'Movie Theater/Performing Arts', 'Resorts', 'Theme Parks', 'Wedding Halls'],
+    'Managed Property': ['Commercial Multi-Tenant', 'Mixed Use', 'Multi-Family', 'REIT'],
+    'Manufacturing/Industry': ['Biological/Chemical', 'Defense', 'Hi-Technology', 'PetroChemical', 'Textile'],
+    'Religious Institutions': ['Churches', 'Counseling', 'Family Centers'],
+    'Retail': ['Anchor Tenants', 'Big Box Retail', 'Car Dealerships', 'Grocery', 'Malls', 'Retail Tenants', 'Strip Centers', 'Wholesale Warehouse'],
+    'Transportation': ['Airlines', 'Cruise Lines', 'Ground Transportation'],
+    'Other': []
+  };
+
+  (function() {
+    const facilitySelect = document.getElementById('facility_type');
+    const structureSelect = document.getElementById('structure_type');
+
+    const facilityOtherWrap = document.getElementById('facilityOtherWrap');
+    const facilityOtherInput = document.getElementById('facility_type_other');
+    const structureOtherWrap = document.getElementById('structureOtherWrap');
+    const structureOtherInput = document.getElementById('structure_type_other');
+
+    function toggleFacilityOther() {
+      const isOther = facilitySelect.value === 'Other';
+      facilityOtherWrap.style.display = isOther ? 'block' : 'none';
+      if (!isOther) facilityOtherInput.value = '';
+    }
+
+    function toggleStructureOther() {
+      const isOther = structureSelect.value === 'Other';
+      structureOtherWrap.style.display = isOther ? 'block' : 'none';
+      if (!isOther) structureOtherInput.value = '';
+    }
+
+    structureSelect.addEventListener('change', () => {
+      toggleStructureOther();
+      if (typeof scheduleImageRefresh === 'function') scheduleImageRefresh();
+    });
+    facilityOtherInput.addEventListener('input', () => { if (typeof scheduleImageRefresh === 'function') scheduleImageRefresh(); });
+    structureOtherInput.addEventListener('input', () => { if (typeof scheduleImageRefresh === 'function') scheduleImageRefresh(); });
+
+    facilitySelect.addEventListener('change', () => {
+      const facility = facilitySelect.value;
+      structureSelect.innerHTML = '';
+      toggleFacilityOther();
+      toggleStructureOther();
+
+      if (!facility) {
+        structureSelect.disabled = true;
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'Select a Facility Type first…';
+        structureSelect.appendChild(opt);
+        if (typeof scheduleImageRefresh === 'function') scheduleImageRefresh();
+        return;
+      }
+
+      structureSelect.disabled = false;
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Select…';
+      structureSelect.appendChild(placeholder);
+
+      const options = (FACILITY_STRUCTURE_MAP[facility] || []).concat('Other');
+      options.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        structureSelect.appendChild(opt);
+      });
+
+      if (typeof scheduleImageRefresh === 'function') scheduleImageRefresh();
+    });
+  })();
+
   // "Same as POC" toggle — while active, onsite contact stays live-synced to the
   // main POC name/phone; toggling off unlocks the fields for independent editing.
   (function() {
@@ -937,6 +1038,16 @@
     return div.innerHTML;
   }
 
+  function resolveFacilityType() {
+    const v = val('facility_type');
+    return v === 'Other' ? val('facility_type_other') : v;
+  }
+
+  function resolveStructureType() {
+    const v = val('structure_type');
+    return v === 'Other' ? val('structure_type_other') : v;
+  }
+
   function formatDate(iso) {
     if (!iso) return '';
     const [y,m,d] = iso.split('-');
@@ -947,7 +1058,8 @@
     const lines = [];
     lines.push(`@intake @cindy.helmstead`);
     lines.push(`New Loss — ${val('job_type') || 'Job Type Not Selected'}`);
-    if (val('structure_type')) lines.push(`Structure Type: ${val('structure_type')}`);
+    if (val('facility_type')) lines.push(`Facility Type: ${resolveFacilityType()}`);
+    if (val('structure_type')) lines.push(`Structure Type: ${resolveStructureType()}`);
     if (val('intake_instructions')) lines.push(val('intake_instructions'));
     lines.push('');
     lines.push(`Sales Rep: ${val('sales_rep_name')}${val('call_time') ? '  |  Time: ' + val('call_time') : ''}`);
@@ -1063,7 +1175,8 @@
 
         <div class="pc-section">
           <div class="pc-section-title">Job Type &amp; Intake</div>
-          ${row('Structure Type', val('structure_type'))}
+          ${row('Facility Type', resolveFacilityType())}
+          ${row('Structure Type', resolveStructureType())}
           ${row('Intake Instructions', val('intake_instructions'))}
           ${row('Sales Rep', val('sales_rep_name'))}
           ${row('Time', val('call_time'))}
@@ -1155,8 +1268,10 @@
 
   document.getElementById('shareBtn').addEventListener('click', function(clickEvent) {
     const insuranceOk = ynState.self_pay === 'Y' || !!val('insurance_name');
-    if (!val('job_type') || !val('structure_type') || !val('intake_instructions') || !val('street_address') || !val('city') || !val('state') || !val('zip') || !val('poc_name') || !val('poc_title') || !val('poc_phone') || !val('poc_email') || !insuranceOk || typeOfLossSelected.size === 0 || !val('scope_notes')) {
-      showToast('Fill in job type, structure type, intake instructions, full address, all POC fields, at least one Type of Loss, insurance carrier (unless confirmed Self Pay), and scope/notes first');
+    const facilityOk = val('facility_type') && (val('facility_type') !== 'Other' || !!val('facility_type_other'));
+    const structureOk = val('structure_type') && (val('structure_type') !== 'Other' || !!val('structure_type_other'));
+    if (!val('job_type') || !facilityOk || !structureOk || !val('intake_instructions') || !val('street_address') || !val('city') || !val('state') || !val('zip') || !val('poc_name') || !val('poc_title') || !val('poc_phone') || !val('poc_email') || !insuranceOk || typeOfLossSelected.size === 0 || !val('scope_notes')) {
+      showToast('Fill in job type, facility type, structure type, intake instructions, full address, all POC fields, at least one Type of Loss, insurance carrier (unless confirmed Self Pay), and scope/notes first');
       return;
     }
     const message = buildMessage();
